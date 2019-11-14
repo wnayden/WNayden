@@ -1,0 +1,89 @@
+---
+title: "Anheuser Busch Project"
+author: "Billy"
+date: "10/18/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+````{r setup}
+#Load Packages#
+library(ggplot2)
+library(dplyr)
+library(e1071)
+library(caret)
+library(class)
+library(tidyverse)
+#Import Data#
+Beers <- read.csv('Beers.csv')
+Breweries <- read.csv('Breweries.csv')
+#Summarize data#
+summary(Beers)
+summary(Breweries)
+```
+
+````{r}
+#Find out how many breweries in each state#
+summary(Breweries$State)
+#Plot data in bar chart#
+ggplot(Breweries,mapping=aes(x=State, fill=State))+geom_bar()+theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank())
+```
+
+````{r}
+#Combine data sets#
+BBeers <- inner_join(Beers, Breweries, by=c("Brewery_id"="Brew_ID"))
+#Print first 6 values of combined data#
+head(BBeers,n=6)
+#Print last 6 values of combined data#
+tail(BBeers,n=6)
+```
+
+````{r}
+#Check for missing values#
+sum(is.na(BBeers$ABV))
+#62 missing ABVs#
+sum(is.na(BBeers$IBU))
+#1005 missing IBUs#
+```
+
+````{r}
+#Plot median ABV by State#
+BBeers %>% group_by(State) %>% summarise(ABV_median = median(na.omit(ABV)))%>% gather(key,value,-State) %>% ggplot(aes(State,value,fill=key))+geom_bar(stat = "identity", position = "dodge2")
+#Plot median IBU by State#
+BBeers %>% group_by(State) %>% summarise(IBU_median = median(na.omit(IBU)))%>% gather(key,value,-State) %>% ggplot(aes(State,value,fill=key))+geom_bar(stat = "identity", position = "dodge2")
+```
+
+````{r}
+#Find beer with highest ABV#
+maxABV <- subset(BBeers,ABV == max(na.omit(ABV)))
+#Lee Hill Series Vol. 5, Upslope Brewing Company, Boulder, CO#
+#Find beer with highest IBU#
+maxIBU <- subset(BBeers,IBU == max(na.omit(IBU)))
+#Bitter Bitch Imperial IPA, Astoria Brewing Company, Astoria, Oregon#
+```
+
+````{r}
+#Summary statistics of ABV#
+summary(BBeers$ABV)
+#Data distribution and histogram of ABV#
+ggplot(BBeers,mapping = aes(x=ABV))+geom_histogram()
+```
+
+````{r}
+#Plot relationship between ABV and IBU#
+ggplot(BBeers,mapping = aes(x=ABV,y=IBU))+geom_point()+geom_smooth(method = "lm")
+```
+
+```{r}
+#Classify beers as IPA, Ale or Other#
+BBeers$Class <- ifelse(grepl("IPA", BBeers$Style, ignore.case = T), "IPA", 
+         ifelse(grepl("Ale", BBeers$Style, ignore.case = T), "Ale", "Other"))
+#Plot ABV and IBU relationship by class#
+ggplot(BBeers,mapping = aes(x=ABV,y=IBU))+geom_point(aes(colour = BBeers$Class))+geom_smooth(method = "lm")
+#Create train and test sets#
+BeersTrain <- na.omit(BBeers)
+BeersTest <- na.omit(Beers)
+#Set up KNN analysis#
+knn(BeersTrain[,3:4],BeersTest[,3:4],BeersTrain$Class,k=5, prob = T)
+```
