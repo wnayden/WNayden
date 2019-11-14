@@ -10,3 +10,5 @@
 **Work:** 4FRONT
 
 **School:** Southern Methodist University
+
+Check out my data science work on the other tabs!
